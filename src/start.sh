@@ -59,14 +59,6 @@ fi
 if [ "$download_hunyuan_native_i2v" == "true" ]; then
   echo "Downloading Native I2V diffusion model"
     mkdir -p "$NETWORK_VOLUME/ComfyUI/models/diffusion_models"
-    if [ ! -f "$NETWORK_VOLUME/ComfyUI/models/diffusion_models/hunyuan_video_image_to_video_720p_bf16.safetensors" ]; then
-        wget -c -O "$NETWORK_VOLUME/ComfyUI/models/diffusion_models/hunyuan_video_image_to_video_720p_bf16.safetensors" \
-        https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/diffusion_models/hunyuan_video_image_to_video_720p_bf16.safetensors
-    fi
-fi
-if [ "$download_fixed_hunyuan_i2v" == "true" ]; then
-  echo "Downloading Native I2V diffusion model"
-    mkdir -p "$NETWORK_VOLUME/ComfyUI/models/diffusion_models"
     if [ ! -f "$NETWORK_VOLUME/ComfyUI/models/diffusion_models/hunyuan_video_I2V_720_fixed_bf16.safetensors" ]; then
         wget -c -O "$NETWORK_VOLUME/ComfyUI/models/diffusion_models/hunyuan_video_I2V_720_fixed_bf16.safetensors" \
         https://huggingface.co/Kijai/HunyuanVideo_comfy/resolve/main/hunyuan_video_I2V_720_fixed_bf16.safetensors
@@ -75,9 +67,9 @@ fi
 if [ "$download_hunyuan_quantized_i2v" == "true" ]; then
   echo "Downloading Hunyuan I2V diffusion model"
     mkdir -p "$NETWORK_VOLUME/ComfyUI/models/diffusion_models"
-    if [ ! -f "$NETWORK_VOLUME/ComfyUI/models/diffusion_models/hunyuan_video_I2V_fp8_e4m3fn.safetensors" ]; then
-        wget -c -O "$NETWORK_VOLUME/ComfyUI/models/diffusion_models/hunyuan_video_I2V_fp8_e4m3fn.safetensors" \
-        https://huggingface.co/Kijai/HunyuanVideo_comfy/resolve/main/hunyuan_video_I2V_fp8_e4m3fn.safetensors
+    if [ ! -f "$NETWORK_VOLUME/ComfyUI/models/diffusion_models/hunyuan_video_I2V_720_fixed_fp8_e4m3fn.safetensors" ]; then
+        wget -c -O "$NETWORK_VOLUME/ComfyUI/models/diffusion_models/hunyuan_video_I2V_720_fixed_fp8_e4m3fn.safetensors" \
+        https://huggingface.co/Kijai/HunyuanVideo_comfy/resolve/main/hunyuan_video_I2V_720_fixed_fp8_e4m3fn.safetensors
     fi
 fi
 if [ "$download_skyreels_i2v" == "true" ]; then
@@ -163,7 +155,7 @@ cd $NETWORK_VOLUME/ComfyUI/custom_nodes
 if [ ! -d "ComfyUI-HunyuanVideoWrapper" ]; then
     git clone https://github.com/kijai/ComfyUI-HunyuanVideoWrapper.git
 else
-    cd ComfyUI-WanVideoWrapper
+    cd HunyuanVideoWrapper
     git pull
 fi
 # Install dependencies
@@ -192,6 +184,47 @@ done
 # Workspace as main working directory
 echo "cd $NETWORK_VOLUME" >> ~/.bashrc
 
+if [ "$change_preview_method" == "true" ]; then
+    echo "Updating default preview method..."
+    sed -i '/id: *'"'"'VHS.LatentPreview'"'"'/,/defaultValue:/s/defaultValue: false/defaultValue: true/' $NETWORK_VOLUME/ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite/web/js/VHS.core.js
+    CONFIG_PATH="/ComfyUI/user/default/ComfyUI-Manager"
+    CONFIG_FILE="$CONFIG_PATH/config.ini"
+
+# Ensure the directory exists
+mkdir -p "$CONFIG_PATH"
+
+# Create the config file if it doesn't exist
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Creating config.ini..."
+    cat <<EOL > "$CONFIG_FILE"
+[default]
+preview_method = auto
+git_exe =
+use_uv = False
+channel_url = https://raw.githubusercontent.com/ltdrdata/ComfyUI-Manager/main
+share_option = all
+bypass_ssl = False
+file_logging = True
+component_policy = workflow
+update_policy = stable-comfyui
+windows_selector_event_loop_policy = False
+model_download_by_agent = False
+downgrade_blacklist =
+security_level = normal
+skip_migration_check = False
+always_lazy_install = False
+network_mode = public
+db_mode = cache
+EOL
+else
+    echo "config.ini already exists. Updating preview_method..."
+    sed -i 's/^preview_method = .*/preview_method = auto/' "$CONFIG_FILE"
+fi
+echo "Config file setup complete!"
+    echo "Default preview method updated to 'auto'"
+else
+    echo "Skipping preview method update (change_preview_method is not 'true')."
+fi
 # Start ComfyUI
 echo "Starting ComfyUI"
 if [ "$USE_SAGE_ATTENTION" = "false" ]; then
