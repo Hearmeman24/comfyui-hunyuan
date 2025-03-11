@@ -48,74 +48,100 @@ rm -rf CivitAI_Downloader  # Clean up the cloned repo
 # Change to the directory
 cd "$CUSTOM_NODES_DIR" || exit 1
 
+download_model() {
+  local destination_dir="$1"
+  local destination_file="$2"
+  local repo_id="$3"
+  local file_path="$4"
+
+  mkdir -p "$destination_dir"
+
+  if [ ! -f "$destination_dir/$destination_file" ]; then
+    echo "Downloading $destination_file..."
+
+    # First, download to a temporary directory
+    local temp_dir=$(mktemp -d)
+    huggingface-cli download "$repo_id" "$file_path" --local-dir "$temp_dir" --resume-download
+
+    # Find the downloaded file in the temp directory (may be in subdirectories)
+    local downloaded_file=$(find "$temp_dir" -type f -name "$(basename "$file_path")")
+
+    # Move it to the destination directory with the correct name
+    if [ -n "$downloaded_file" ]; then
+      mv "$downloaded_file" "$destination_dir/$destination_file"
+      echo "Successfully downloaded to $destination_dir/$destination_file"
+    else
+      echo "Error: File not found after download"
+    fi
+
+    # Clean up temporary directory
+    rm -rf "$temp_dir"
+  else
+    echo "$destination_file already exists, skipping download."
+  fi
+}
+
+# Define base paths
+DIFFUSION_MODELS_DIR="$NETWORK_VOLUME/ComfyUI/models/diffusion_models"
+TEXT_ENCODERS_DIR="$NETWORK_VOLUME/ComfyUI/models/text_encoders"
+CLIP_VISION_DIR="$NETWORK_VOLUME/ComfyUI/models/clip_vision"
+VAE_DIR="$NETWORK_VOLUME/ComfyUI/models/vae"
+
+# Download Hunyuan T2V diffusion model
 if [ "$download_hunyuan_t2v" == "true" ]; then
   echo "Downloading Hunyuan T2V diffusion model"
-    mkdir -p "$NETWORK_VOLUME/ComfyUI/models/diffusion_models"
-    if [ ! -f "$NETWORK_VOLUME/ComfyUI/models/diffusion_models/hunyuan_video_720_cfgdistill_bf16.safetensors" ]; then
-        wget -c -O "$NETWORK_VOLUME/ComfyUI/models/diffusion_models/hunyuan_video_720_cfgdistill_bf16.safetensors" \
-        https://huggingface.co/Kijai/HunyuanVideo_comfy/resolve/main/hunyuan_video_720_cfgdistill_bf16.safetensors
-    fi
+  download_model "$DIFFUSION_MODELS_DIR" "hunyuan_video_720_cfgdistill_bf16.safetensors" \
+    "Kijai/HunyuanVideo_comfy" "hunyuan_video_720_cfgdistill_bf16.safetensors"
 fi
+
+# Download Native I2V diffusion model
 if [ "$download_hunyuan_native_i2v" == "true" ]; then
   echo "Downloading Native I2V diffusion model"
-    mkdir -p "$NETWORK_VOLUME/ComfyUI/models/diffusion_models"
-    if [ ! -f "$NETWORK_VOLUME/ComfyUI/models/diffusion_models/hunyuan_video_I2V_720_fixed_bf16.safetensors" ]; then
-        wget -c -O "$NETWORK_VOLUME/ComfyUI/models/diffusion_models/hunyuan_video_I2V_720_fixed_bf16.safetensors" \
-        https://huggingface.co/Kijai/HunyuanVideo_comfy/resolve/main/hunyuan_video_I2V_720_fixed_bf16.safetensors
-    fi
+  download_model "$DIFFUSION_MODELS_DIR" "hunyuan_video_I2V_720_fixed_bf16.safetensors" \
+    "Kijai/HunyuanVideo_comfy" "hunyuan_video_I2V_720_fixed_bf16.safetensors"
 fi
+
+# Download Hunyuan I2V diffusion model (quantized)
 if [ "$download_hunyuan_quantized_i2v" == "true" ]; then
   echo "Downloading Hunyuan I2V diffusion model"
-    mkdir -p "$NETWORK_VOLUME/ComfyUI/models/diffusion_models"
-    if [ ! -f "$NETWORK_VOLUME/ComfyUI/models/diffusion_models/hunyuan_video_I2V_720_fixed_fp8_e4m3fn.safetensors" ]; then
-        wget -c -O "$NETWORK_VOLUME/ComfyUI/models/diffusion_models/hunyuan_video_I2V_720_fixed_fp8_e4m3fn.safetensors" \
-        https://huggingface.co/Kijai/HunyuanVideo_comfy/resolve/main/hunyuan_video_I2V_720_fixed_fp8_e4m3fn.safetensors
-    fi
+  download_model "$DIFFUSION_MODELS_DIR" "hunyuan_video_I2V_720_fixed_fp8_e4m3fn.safetensors" \
+    "Kijai/HunyuanVideo_comfy" "hunyuan_video_I2V_720_fixed_fp8_e4m3fn.safetensors"
 fi
+
+# Download SkyReels I2V
 if [ "$download_skyreels_i2v" == "true" ]; then
-  mkdir -p "$NETWORK_VOLUME/ComfyUI/models/diffusion_models"
-  if [ ! -f "$NETWORK_VOLUME/ComfyUI/models/diffusion_models/skyreels_hunyuan_i2v_bf16.safetensors" ]; then
-      wget -c -O "$NETWORK_VOLUME/ComfyUI/models/diffusion_models/skyreels_hunyuan_i2v_bf16.safetensors" \
-      https://huggingface.co/Kijai/SkyReels-V1-Hunyuan_comfy/resolve/main/skyreels_hunyuan_i2v_bf16.safetensors
-  fi
+  download_model "$DIFFUSION_MODELS_DIR" "skyreels_hunyuan_i2v_bf16.safetensors" \
+    "Kijai/SkyReels-V1-Hunyuan_comfy" "skyreels_hunyuan_i2v_bf16.safetensors"
 fi
+
+# Download SkyReels T2V
 if [ "$download_skyreels_t2v" == "true" ]; then
-  mkdir -p "$NETWORK_VOLUME/ComfyUI/models/diffusion_models"
-  if [ ! -f "$NETWORK_VOLUME/ComfyUI/models/diffusion_models/skyreels_hunyuan_t2v_bf16.safetensors" ]; then
-      wget -c -O "$NETWORK_VOLUME/ComfyUI/models/diffusion_models/skyreels_hunyuan_t2v_bf16.safetensors" \
-      https://huggingface.co/Kijai/SkyReels-V1-Hunyuan_comfy/resolve/main/skyreels_hunyuan_t2v_bf16.safetensors
-  fi
+  download_model "$DIFFUSION_MODELS_DIR" "skyreels_hunyuan_t2v_bf16.safetensors" \
+    "Kijai/SkyReels-V1-Hunyuan_comfy" "skyreels_hunyuan_t2v_bf16.safetensors"
 fi
 
-echo "Downloading text encoders"
-mkdir -p "$NETWORK_VOLUME/ComfyUI/models/text_encoders"
-if [ ! -f "$NETWORK_VOLUME/ComfyUI/models/text_encoders/clip_l.safetensors" ]; then
-    wget -O "$NETWORK_VOLUME/ComfyUI/models/text_encoders/clip_l.safetensors" \
-    https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/text_encoders/clip_l.safetensors
-fi
-if [ ! -f "$NETWORK_VOLUME/ComfyUI/models/text_encoders/llava_llama3_fp8_scaled.safetensors" ]; then
-    wget -O "$NETWORK_VOLUME/ComfyUI/models/text_encoders/llava_llama3_fp8_scaled.safetensors" \
-    https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/text_encoders/llava_llama3_fp8_scaled.safetensors
-fi
-if [ ! -f "$NETWORK_VOLUME/ComfyUI/models/text_encoders/Long-ViT-L-14-GmP-SAE-full-model.safetensors" ]; then
-    wget -O "$NETWORK_VOLUME/ComfyUI/models/text_encoders/Long-ViT-L-14-GmP-SAE-full-model.safetensors" \
-    https://huggingface.co/zer0int/LongCLIP-SAE-ViT-L-14/resolve/main/Long-ViT-L-14-GmP-SAE-full-model.safetensors
-fi
-if [ ! -f "$NETWORK_VOLUME/ComfyUI/models/clip_vision/llava_llama3_vision.safetensors" ]; then
-    wget -O "$NETWORK_VOLUME/ComfyUI/models/clip_vision/llava_llama3_vision.safetensors" \
-    https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/clip_vision/llava_llama3_vision.safetensors
-fi
+# Download text encoders
+echo "Downloading text encoders..."
+download_model "$TEXT_ENCODERS_DIR" "clip_l.safetensors" \
+  "Comfy-Org/HunyuanVideo_repackaged" "split_files/text_encoders/clip_l.safetensors"
 
-echo "Downloading VAE"
-mkdir -p "$NETWORK_VOLUME/ComfyUI/models/vae"
-if [ ! -f "$NETWORK_VOLUME/ComfyUI/models/vae/hunyuan_video_vae_fp32.safetensors" ]; then
-    wget -O "$NETWORK_VOLUME/ComfyUI/models/vae/hunyuan_video_vae_fp32.safetensors" \
-    https://huggingface.co/Kijai/HunyuanVideo_comfy/resolve/main/hunyuan_video_vae_fp32.safetensors
-fi
-if [ ! -f "$NETWORK_VOLUME/ComfyUI/models/vae/hunyuan_video_vae_bf16.safetensors" ]; then
-    wget -O "$NETWORK_VOLUME/ComfyUI/models/vae/hunyuan_video_vae_bf16.safetensors" \
-    https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/vae/hunyuan_video_vae_bf16.safetensors
-fi
+download_model "$TEXT_ENCODERS_DIR" "llava_llama3_fp8_scaled.safetensors" \
+  "Comfy-Org/HunyuanVideo_repackaged" "split_files/text_encoders/llava_llama3_fp8_scaled.safetensors"
+
+download_model "$TEXT_ENCODERS_DIR" "Long-ViT-L-14-GmP-SAE-full-model.safetensors" \
+  "zer0int/LongCLIP-SAE-ViT-L-14" "Long-ViT-L-14-GmP-SAE-full-model.safetensors"
+
+# Download CLIP vision model
+download_model "$CLIP_VISION_DIR" "llava_llama3_vision.safetensors" \
+  "Comfy-Org/HunyuanVideo_repackaged" "split_files/clip_vision/llava_llama3_vision.safetensors"
+
+# Download VAE models
+echo "Downloading VAE..."
+download_model "$VAE_DIR" "hunyuan_video_vae_fp32.safetensors" \
+  "Kijai/HunyuanVideo_comfy" "hunyuan_video_vae_fp32.safetensors"
+
+download_model "$VAE_DIR" "hunyuan_video_vae_bf16.safetensors" \
+  "Comfy-Org/HunyuanVideo_repackaged" "split_files/vae/hunyuan_video_vae_bf16.safetensors"
 
 
 # Download upscale model
