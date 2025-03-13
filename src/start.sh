@@ -182,7 +182,7 @@ cd $NETWORK_VOLUME/ComfyUI/custom_nodes
 if [ ! -d "ComfyUI-HunyuanVideoWrapper" ]; then
     git clone https://github.com/kijai/ComfyUI-HunyuanVideoWrapper.git
 else
-    cd HunyuanVideoWrapper
+    cd ComfyUI-HunyuanVideoWrapper
     git pull
 fi
 # Install dependencies
